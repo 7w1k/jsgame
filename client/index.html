@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>⚡ Reaction Race 2.0 ⚡</title>
+  <style>
+    body {
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      font-family: "Poppins", sans-serif;
+      overflow: hidden;
+    }
+    h1 {
+      font-size: 2.5rem;
+      text-shadow: 0 0 10px rgba(0,0,0,0.4);
+    }
+    #game-area {
+      position: relative;
+      width: 650px;
+      height: 400px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 20px;
+      box-shadow: 0 4px 30px rgba(0,0,0,0.3);
+      overflow: hidden;
+      margin-top: 15px;
+    }
+    .target {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #ffdf00, #ff6a00);
+      box-shadow: 0 0 15px #ffeb3b;
+      cursor: pointer;
+      animation: pulse 1s infinite alternate;
+    }
+    @keyframes pulse {
+      from { transform: scale(1); opacity: 1; }
+      to { transform: scale(1.3); opacity: 0.7; }
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 30px;
+      font-size: 1.2rem;
+      background: #ff9800;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      transition: 0.2s;
+    }
+    button:hover {
+      transform: scale(1.05);
+      background: #ffa733;
+    }
+    #message {
+      font-size: 1.3rem;
+      margin-top: 15px;
+      min-height: 30px;
+    }
+    #leaderboard {
+      margin-top: 30px;
+      width: 400px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 15px;
+      text-align: center;
+    }
+    table {
+      width: 100%;
+      color: white;
+      border-collapse: collapse;
+    }
+    th, td {
+      text-align: center;
+      padding: 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.3);
+    }
+    tr:first-child {
+      background: rgba(255,215,0,0.3);
+      font-weight: bold;
+    }
+    .fast { color: #4caf50; font-weight: bold; }
+    .slow { color: #ff3d00; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>⚡ Reaction Race 2.0 ⚡</h1>
+  <div id="game-area"></div>
+  <button id="start-btn">Start Game</button>
+  <div id="message"></div>
+
+  <div id="leaderboard">
+    <h2>🏆 Top 5 Players</h2>
+    <table id="leaderboardTable">
+      <thead><tr><th>Rank</th><th>Player</th><th>Avg Time (ms)</th><th>Score</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    const gameArea = document.getElementById('game-area');
+    const startBtn = document.getElementById('start-btn');
+    const message = document.getElementById('message');
+    let startTime, clickTime, reactionTimes = [], score = 0;
+    let round = 0, maxRounds = 7;
+    let target, misses = 0;
+
+    startBtn.addEventListener('click', startGame);
+
+    function startGame() {
+      reactionTimes = [];
+      score = 0;
+      misses = 0;
+      round = 0;
+      message.textContent = "";
+      startBtn.disabled = true;
+      nextRound();
+    }
+
+    function nextRound() {
+      if (target) target.remove();
+      round++;
+      if (round > maxRounds) {
+        endGame();
+        return;
+      }
+      const delay = Math.random() * 2000 + 1000;
+      message.textContent = `Round ${round}/${maxRounds}...`;
+      setTimeout(() => spawnTarget(), delay);
+    }
+
+    function spawnTarget() {
+      target = document.createElement('div');
+      target.classList.add('target');
+      const x = Math.random() * (gameArea.clientWidth - 60);
+      const y = Math.random() * (gameArea.clientHeight - 60);
+      target.style.left = `${x}px`;
+      target.style.top = `${y}px`;
+      gameArea.appendChild(target);
+      startTime = Date.now();
+
+      target.addEventListener('click', () => {
+        clickTime = Date.now();
+        const reaction = clickTime - startTime;
+        reactionTimes.push(reaction);
+        target.remove();
+        const roundPoints = calculateRoundScore(reaction);
+        score += roundPoints;
+
+        if (reaction <= 300)
+          message.innerHTML = `<span class="fast">🔥 Perfect! ${reaction} ms (+${roundPoints})</span>`;
+        else if (reaction <= 500)
+          message.innerHTML = `<span style="color:#ffeb3b;">⚡ Fast! ${reaction} ms (+${roundPoints})</span>`;
+        else
+          message.innerHTML = `<span class="slow">🐢 Slow! ${reaction} ms (+${roundPoints})</span>`;
+
+        setTimeout(nextRound, 800);
+      });
+
+      // timeout if missed
+      setTimeout(() => {
+        if (gameArea.contains(target)) {
+          target.remove();
+          misses++;
+          message.innerHTML = `<span class="slow">❌ Missed!</span>`;
+          setTimeout(nextRound, 800);
+        }
+      }, 2000);
+    }
+
+    function calculateRoundScore(time) {
+      if (time <= 200) return 100;
+      if (time <= 300) return 80;
+      if (time <= 400) return 60;
+      if (time <= 500) return 40;
+      if (time <= 700) return 20;
+      return 0;
+    }
+
+    function endGame() {
+      const avgTime = reactionTimes.length
+        ? Math.round(reactionTimes.reduce((a, b) => a + b) / reactionTimes.length)
+        : 2000;
+
+      if (avgTime < 300) score += 200;
+      if (misses === 0) score += 100;
+
+      message.textContent = `🏁 Finished! Avg: ${avgTime} ms | Score: ${score}`;
+      startBtn.disabled = false;
+
+      const payload = {
+        player: 1, // static user ID for now
+        time_ms: avgTime,
+        rounds_to_play: maxRounds,
+        score: score
+      };
+
+      fetch('http://127.0.0.1:8000/api/quickstart/games/create/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json())
+      .then(() => loadLeaderboard())
+      .catch(console.error);
+    }
+
+    function loadLeaderboard() {
+      fetch('http://127.0.0.1:8000/api/quickstart/games')
+        .then(res => res.json())
+        .then(data => {
+          const tbody = document.querySelector('#leaderboardTable tbody');
+          tbody.innerHTML = '';
+          data.sort((a, b) => b.score - a.score).slice(0, 5).forEach((g, index) => {
+            const row = `<tr>
+              <td>${index + 1}</td>
+              <td>${g.player}</td>
+              <td>${g.time_ms}</td>
+              <td>${Math.round(g.score)}</td>
+            </tr>`;
+            tbody.insertAdjacentHTML('beforeend', row);
+          });
+        });
+    }
+
+    loadLeaderboard();
+  </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+    "user_id": "84d7a8d5-1f2c-4e6a-8b9d-5f3e4c2b1a0d", // Example UUID generated locally
+    "time_ms": 235.45,                                 // The final calculated average reaction time
+    "rounds": 10                                       // The constant MAX_ROUNDS value
+}
+
+
+
+satwik
+www.satwik1234@gmail.com
+satwik1@
